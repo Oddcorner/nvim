@@ -1,0 +1,7 @@
+.netrwhist
+undo/
+plugin/
+lazy-lock.json
+
+.env
+secret.lua
