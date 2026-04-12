@@ -17,9 +17,9 @@ vim.opt.splitright = true
 vim.opt.splitbelow = true
 vim.opt.cursorline = true
 vim.opt.scrolloff = 10
-vim.opt.sidescrolloff = 8 
+vim.opt.sidescrolloff = 8
 vim.opt.termguicolors = true
-vim.opt.updatetime = 50
+vim.opt.updatetime = 250
 
 -- Context Aware Folds
 vim.opt.foldmethod = 'expr'
@@ -54,18 +54,19 @@ require('lazy').setup {
   -- Which-Key
   { 'folke/which-key.nvim', event = 'VimEnter', config = true },
 
--- Telescope (Fuzzy Finder)
+  -- Telescope (Fuzzy Finder)
   {
     'nvim-telescope/telescope.nvim',
     dependencies = { 'nvim-lua/plenary.nvim' },
     config = function()
       local builtin = require('telescope.builtin')
-      local themes = require('telescope.themes') -- This line fixes your error!
+      local themes = require('telescope.themes')
 
+      -- --- SEARCH MAPPINGS ---
       -- 1. Find Files
       vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
       
-      -- 2. Search INSIDE current buffer (The dropdown version)
+      -- 2. Search INSIDE current buffer (Dropdown)
       vim.keymap.set('n', '<leader>sb', function()
         builtin.current_buffer_fuzzy_find(themes.get_dropdown {
           winblend = 10,
@@ -73,17 +74,33 @@ require('lazy').setup {
         })
       end, { desc = '[S]earch [B]uffer (Fuzzy)' })
 
-      -- 3. Global Grep
+      -- 3. Global Grep (Massive repo search)
       vim.keymap.set('n', '<leader>/', builtin.live_grep, { desc = 'Search [/] (Global)' })
       
-      -- 4. Recent Files (QoL recommendation)
+      -- 4. Recent Files
       vim.keymap.set('n', '<leader>sr', builtin.oldfiles, { desc = '[S]earch [R]ecent Files' })
 
-      -- 5. Symbols (Functions/Variables in current file)
+      -- 5. Open Buffers
+      vim.keymap.set('n', '<leader><space>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+
+
+      -- --- CODE ANALYSIS MAPPINGS (LSP Integration) ---
+      -- These replace the standard LSP jumps with Telescope windows
+      
+      -- 6. Document Symbols (Functions/Variables in current file)
       vim.keymap.set('n', '<leader>ss', builtin.lsp_document_symbols, { desc = '[S]earch [S]ymbols' })
 
-      -- 6. Open Buffers (The list of files you have open)
-      vim.keymap.set('n', '<leader><space>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+      -- 7. Workspace Symbols (Find any Struct/Function in the whole Go project)
+      vim.keymap.set('n', '<leader>sw', builtin.lsp_dynamic_workspace_symbols, { desc = '[S]earch [W]orkspace Symbols' })
+
+      -- 8. References (Where is this used?)
+      vim.keymap.set('n', 'gr', builtin.lsp_references, { desc = '[G]oto [R]eferences' })
+
+      -- 9. Incoming Calls (Who calls this function?)
+      vim.keymap.set('n', 'gR', builtin.lsp_incoming_calls, { desc = '[G]oto Incoming [C]alls' })
+
+      -- 10. Implementations (Which struct implements this interface?)
+      vim.keymap.set('n', 'gi', builtin.lsp_implementations, { desc = '[G]oto [I]mplementation' })
     end,
   },
 
@@ -171,7 +188,19 @@ require('lazy').setup {
           },
         },
         -- Add pyright = {}, tsserver = {}, etc. here
-        gopls = {},
+        gopls = {
+          settings = {
+            gopls = {
+              codelenses = {
+                generate = true,
+                gc_details = true, -- Shows "optimization" details like escape analysis
+                test = true,
+                tidy = true,
+              },
+            },
+          },
+        },
+
       }
 
       -- 3. Use mason-lspconfig to bridge the gap
