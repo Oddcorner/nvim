@@ -21,6 +21,11 @@ vim.opt.sidescrolloff = 8
 vim.opt.termguicolors = true
 vim.opt.updatetime = 250
 
+vim.opt.tabstop = 4
+vim.opt.softtabstop = 4
+vim.opt.shiftwidth = 4
+vim.opt.expandtab = true
+
 -- Context Aware Folds
 vim.opt.foldmethod = 'expr'
 vim.opt.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
@@ -32,6 +37,19 @@ vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' }
 -- [[ Keymaps ]]
 vim.opt.hlsearch = true
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
+
+-- Custom netrw keymap
+local function toggle_netrw()
+  if vim.bo.filetype == 'netrw' then
+    vim.cmd('Rexplore')
+  else
+    vim.cmd('Explore')
+  end
+end
+vim.keymap.set('n', '<leader>e', toggle_netrw, { desc = '[E]xplore (Toggle Netrw)' })
+
+-- buffer delete
+vim.keymap.set('n', '<leader>bd', '<CMD>bp|bd #<CR>', { desc = '[X] Close Buffer' })
 
 -- Window Navigation
 vim.keymap.set('n', '<C-h>', '<C-w>h', { desc = 'Move focus to the left window' })
@@ -254,14 +272,14 @@ require('lazy').setup {
   { 'windwp/nvim-autopairs', event = 'InsertEnter', config = true },
 
   -- File Explorer Sidebar
-  {
-    'nvim-tree/nvim-tree.lua',
-    dependencies = { 'nvim-tree/nvim-web-devicons' },
-    config = function()
-      require('nvim-tree').setup()
-      vim.keymap.set('n', '<leader>e', ':NvimTreeToggle<CR>', { desc = 'Toggle File [E]xplorer' })
-    end,
-  },
+  -- {
+  --   'nvim-tree/nvim-tree.lua',
+  --   dependencies = { 'nvim-tree/nvim-web-devicons' },
+  --   config = function()
+  --     require('nvim-tree').setup()
+  --     vim.keymap.set('n', '<leader>e', ':NvimTreeToggle<CR>', { desc = 'Toggle File [E]xplorer' })
+  --   end,
+  -- },
 
   -- GitSigns for git changes
   {
@@ -295,6 +313,29 @@ require('lazy').setup {
     },
   },
 
+
+  -- Harpoon
+  {
+    "ThePrimeagen/harpoon",
+    branch = "harpoon2",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    config = function()
+      local harpoon = require("harpoon")
+      harpoon:setup()
+
+      -- Add current file to harpoon
+      vim.keymap.set("n", "<leader>a", function() harpoon:list():add() end, { desc = "Harpoon [A]dd" })
+      
+      -- Toggle the visual menu
+      vim.keymap.set("n", "<leader>q", function() harpoon.ui:toggle_quick_menu(harpoon:list()) end, { desc = "Harpoon Menu" })
+
+      -- Jump to specific files
+      vim.keymap.set("n", "<leader>1", function() harpoon:list():select(1) end, { desc = "Harpoon to 1" })
+      vim.keymap.set("n", "<leader>2", function() harpoon:list():select(2) end, { desc = "Harpoon to 2" })
+      vim.keymap.set("n", "<leader>3", function() harpoon:list():select(3) end, { desc = "Harpoon to 3" })
+      vim.keymap.set("n", "<leader>4", function() harpoon:list():select(4) end, { desc = "Harpoon to 4" })
+    end,
+  },
 }
 
 -- vim: ts=2 sts=2 sw=2 et
