@@ -89,135 +89,128 @@ for i, mark in ipairs(slots) do
   end, { desc = 'Go to slot ' .. i })
 end
 
--- [[ Install lazy.nvim ]]
-local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
-if not vim.loop.fs_stat(lazypath) then
-  vim.fn.system { 'git', 'clone', '--filter=blob:none', '--branch=stable', 'https://github.com/folke/lazy.nvim.git', lazypath }
+-- [[ Plugins ]]
+-- Managed by the built-in vim.pack; update with :lua vim.pack.update()
+-- Build hooks must be registered before vim.pack.add() so they also run on install
+vim.api.nvim_create_autocmd('PackChanged', {
+  callback = function(ev)
+    local name, kind = ev.data.spec.name, ev.data.kind
+    if name == 'nvim-treesitter' and kind == 'update' then
+      if not ev.data.active then vim.cmd.packadd 'nvim-treesitter' end
+      vim.cmd 'TSUpdate'
+    end
+  end,
+})
+
+local gh = function(repo) return 'https://github.com/' .. repo end
+vim.pack.add {
+  gh 'folke/tokyonight.nvim',
+  gh 'folke/which-key.nvim',
+  gh 'nvim-lua/plenary.nvim',
+  gh 'nvim-telescope/telescope.nvim',
+  { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' },
+  gh 'windwp/nvim-autopairs',
+  gh 'lewis6991/gitsigns.nvim',
+  gh 'nvim-mini/mini.icons',
+  gh 'stevearc/oil.nvim',
+}
+
+-- Theme
+vim.cmd.colorscheme 'tokyonight-night'
+
+-- Which-Key
+require('which-key').setup()
+
+-- Telescope (Fuzzy Finder)
+do
+  local builtin = require('telescope.builtin')
+  local themes = require('telescope.themes')
+
+  -- --- SEARCH MAPPINGS ---
+  -- 1. Find Files
+  vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
+
+  -- 2. Search INSIDE current buffer (Dropdown)
+  vim.keymap.set('n', '<leader>sb', function()
+    builtin.current_buffer_fuzzy_find(themes.get_dropdown {
+      winblend = 10,
+      previewer = false,
+    })
+  end, { desc = '[S]earch [B]uffer (Fuzzy)' })
+
+  -- 3. Global Grep (Massive repo search)
+  vim.keymap.set('n', '<leader>/', builtin.live_grep, { desc = 'Search [/] (Global)' })
+
+  -- 4. Recent Files
+  vim.keymap.set('n', '<leader>sr', builtin.oldfiles, { desc = '[S]earch [R]ecent Files' })
+
+  -- 5. Open Buffers
+  vim.keymap.set('n', '<leader><space>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+
+  -- --- CODE ANALYSIS MAPPINGS (LSP Integration) ---
+  -- 6. Document Symbols (Functions/Variables in current file)
+  vim.keymap.set('n', '<leader>ss', builtin.lsp_document_symbols, { desc = '[S]earch [S]ymbols' })
+
+  -- 7. Workspace Symbols (Find any Struct/Function in the whole Go project)
+  vim.keymap.set('n', '<leader>sw', builtin.lsp_dynamic_workspace_symbols, { desc = '[S]earch [W]orkspace Symbols' })
+
+  -- These override the built-in gr* LSP defaults (grr, gri) with Telescope pickers
+  -- 8. References (Where is this used?)
+  vim.keymap.set('n', 'grr', builtin.lsp_references, { desc = '[G]oto [R]eferences' })
+
+  -- 9. Incoming Calls (Who calls this function?)
+  vim.keymap.set('n', 'grc', builtin.lsp_incoming_calls, { desc = '[G]oto Incoming [C]alls' })
+
+  -- 10. Implementations (Which struct implements this interface?)
+  vim.keymap.set('n', 'gri', builtin.lsp_implementations, { desc = '[G]oto [I]mplementation' })
 end
-vim.opt.rtp:prepend(lazypath)
 
--- [[ Configure Plugins ]]
-require('lazy').setup {
-  -- Theme
-  { 'folke/tokyonight.nvim', priority = 1000, config = function() vim.cmd.colorscheme 'tokyonight-night' end },
+-- Treesitter (Highlighting)
+do
+  -- 1. List the languages you want installed
+  local languages = { 'lua', 'vim', 'vimdoc', 'javascript', 'typescript', 'python', 'bash', 'markdown', 'go' }
+  -- 2. Ensure they are installed
+  require('nvim-treesitter').install(languages)
 
-  -- Which-Key
-  { 'folke/which-key.nvim', event = 'VimEnter', config = true },
+  -- 3. Create a function to attach Treesitter to a buffer
+  local function treesitter_attach(buf, lang)
+    -- Start syntax highlighting
+    vim.treesitter.start(buf, lang)
+    -- Enable smart indentation if the language supports it
+    local has_indent = vim.treesitter.query.get(lang, 'indent') ~= nil
+    if has_indent then
+      vim.bo[buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+    end
+  end
 
-  -- Telescope (Fuzzy Finder)
-  {
-    'nvim-telescope/telescope.nvim',
-    dependencies = { 'nvim-lua/plenary.nvim' },
-    config = function()
-      local builtin = require('telescope.builtin')
-      local themes = require('telescope.themes')
-
-      -- --- SEARCH MAPPINGS ---
-      -- 1. Find Files
-      vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
-      
-      -- 2. Search INSIDE current buffer (Dropdown)
-      vim.keymap.set('n', '<leader>sb', function()
-        builtin.current_buffer_fuzzy_find(themes.get_dropdown {
-          winblend = 10,
-          previewer = false,
-        })
-      end, { desc = '[S]earch [B]uffer (Fuzzy)' })
-
-      -- 3. Global Grep (Massive repo search)
-      vim.keymap.set('n', '<leader>/', builtin.live_grep, { desc = 'Search [/] (Global)' })
-      
-      -- 4. Recent Files
-      vim.keymap.set('n', '<leader>sr', builtin.oldfiles, { desc = '[S]earch [R]ecent Files' })
-
-      -- 5. Open Buffers
-      vim.keymap.set('n', '<leader><space>', builtin.buffers, { desc = '[ ] Find existing buffers' })
-
-
-      -- --- CODE ANALYSIS MAPPINGS (LSP Integration) ---
-      -- These replace the standard LSP jumps with Telescope windows
-      
-      -- 6. Document Symbols (Functions/Variables in current file)
-      vim.keymap.set('n', '<leader>ss', builtin.lsp_document_symbols, { desc = '[S]earch [S]ymbols' })
-
-      -- 7. Workspace Symbols (Find any Struct/Function in the whole Go project)
-      vim.keymap.set('n', '<leader>sw', builtin.lsp_dynamic_workspace_symbols, { desc = '[S]earch [W]orkspace Symbols' })
-
-      -- These override the built-in gr* LSP defaults (grr, gri) with Telescope pickers
-      -- 8. References (Where is this used?)
-      vim.keymap.set('n', 'grr', builtin.lsp_references, { desc = '[G]oto [R]eferences' })
-
-      -- 9. Incoming Calls (Who calls this function?)
-      vim.keymap.set('n', 'grc', builtin.lsp_incoming_calls, { desc = '[G]oto Incoming [C]alls' })
-
-      -- 10. Implementations (Which struct implements this interface?)
-      vim.keymap.set('n', 'gri', builtin.lsp_implementations, { desc = '[G]oto [I]mplementation' })
+  -- 4. Automatically trigger Treesitter when you open a file
+  vim.api.nvim_create_autocmd('FileType', {
+    callback = function(args)
+      local lang = vim.treesitter.language.get_lang(args.match)
+      if not lang then return end
+      -- Try to attach. If the parser isn't installed, this will
+      -- fail silently or you can use require('nvim-treesitter').install()
+      pcall(treesitter_attach, args.buf, lang)
     end,
-  },
+  })
+end
 
-  -- Treesitter (Highlighting)
-  {
-    'nvim-treesitter/nvim-treesitter',
-    build = ':TSUpdate',
-    config = function()
-      -- 1. List the languages you want installed
-      local languages = { 'lua', 'vim', 'vimdoc', 'javascript', 'typescript', 'python', 'bash', 'markdown', 'go'}
-      -- 2. Ensure they are installed
-      require('nvim-treesitter').install(languages)
+-- Auto Brackets
+-- map_cr is handled by the completion <CR> mapping below
+require('nvim-autopairs').setup { map_cr = false }
 
-      -- 3. Create a function to attach Treesitter to a buffer
-      local function treesitter_attach(buf, lang)
-        -- Start syntax highlighting
-        vim.treesitter.start(buf, lang)
-        -- Enable smart indentation if the language supports it
-        local has_indent = vim.treesitter.query.get(lang, 'indent') ~= nil
-        if has_indent then
-          vim.bo[buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
-        end
-      end
-
-      -- 4. Automatically trigger Treesitter when you open a file
-      vim.api.nvim_create_autocmd('FileType', {
-        callback = function(args)
-          local lang = vim.treesitter.language.get_lang(args.match)
-          if not lang then return end
-          -- Try to attach. If the parser isn't installed, this will 
-          -- fail silently or you can use require('nvim-treesitter').install()
-          pcall(treesitter_attach, args.buf, lang)
-        end,
-      })
-    end,
-  },
-
-  -- Auto Brackets
-  -- map_cr is handled by the completion <CR> mapping below
-  { 'windwp/nvim-autopairs', event = 'InsertEnter', opts = { map_cr = false } },
-
-
-  -- GitSigns for git changes
-  {
-    'lewis6991/gitsigns.nvim',
-    opts = {
-      signs = {
-        add = { text = '+' },
-        change = { text = '~' },
-        delete = { text = '_' },
-      },
-    },
-  },
-
-  -- oil
-  {
-    'stevearc/oil.nvim',
-    ---@module 'oil'
-    ---@type oil.SetupOpts
-    opts = {},
-    -- Optional dependencies
-    dependencies = { { "nvim-mini/mini.icons", opts = {} } },
-    -- Lazy loading is not recommended because it is very tricky to make it work correctly in all situations.
-    lazy = false,
+-- GitSigns for git changes
+require('gitsigns').setup {
+  signs = {
+    add = { text = '+' },
+    change = { text = '~' },
+    delete = { text = '_' },
   },
 }
+
+-- oil
+require('mini.icons').setup()
+require('oil').setup()
 
 -- [[ LSP ]]
 -- Servers are installed by Mason previously; reuse its bin dir
