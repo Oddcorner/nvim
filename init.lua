@@ -284,6 +284,22 @@ vim.o.grepprg = 'rg --vimgrep --smart-case --hidden -g !.git'
 vim.api.nvim_create_autocmd('QuickFixCmdPost', { pattern = '[^l]*', command = 'cwindow' })
 vim.api.nvim_create_autocmd('QuickFixCmdPost', { pattern = 'l*', command = 'lwindow' })
 
+-- :Grep takes the whole argument as one pattern, with no shell quoting or %/#/| expansion.
+-- It is a regex, falling back to a literal string if the regex doesn't parse (e.g. "foo(")
+local rg = { 'rg', '--vimgrep', '--smart-case', '--hidden', '-g', '!.git' }
+local function grep(pattern, fixed)
+  local cmd = vim.list_extend(vim.list_slice(rg), fixed and { '--fixed-strings', '--', pattern } or { '--', pattern })
+  vim.system(cmd, { text = true }, vim.schedule_wrap(function(res)
+    -- rg exits 1 for no matches and 2 for errors such as an invalid regex
+    if res.code == 2 and not fixed then return grep(pattern, true) end
+    if res.code == 2 then return vim.notify(res.stderr, vim.log.levels.ERROR) end
+    if res.code == 1 then return vim.notify('No matches for: ' .. pattern) end
+    vim.fn.setqflist({}, ' ', { title = 'Grep: ' .. pattern, lines = vim.split(res.stdout, '\n', { trimempty = true }), efm = vim.o.grepformat })
+    vim.cmd 'botright copen'
+  end))
+end
+vim.api.nvim_create_user_command('Grep', function(opts) grep(opts.args) end, { nargs = '+', desc = 'Search the project with ripgrep' })
+
 -- Fuzzy-match lines in the current buffer into the location list
 local function buffer_fuzzy_find()
   vim.ui.input({ prompt = 'Fuzzy find in buffer: ' }, function(query)
@@ -300,7 +316,7 @@ end
 
 vim.keymap.set('n', '<leader>sf', ':find ', { desc = '[S]earch [F]iles' })
 vim.keymap.set('n', '<leader>sb', buffer_fuzzy_find, { desc = '[S]earch [B]uffer (Fuzzy)' })
-vim.keymap.set('n', '<leader>/', ':silent grep! ', { desc = 'Search [/] (Global)' })
+vim.keymap.set('n', '<leader>/', ':Grep ', { desc = 'Search [/] (Global)' })
 vim.keymap.set('n', '<leader>sr', ':Recent ', { desc = '[S]earch [R]ecent Files' })
 vim.keymap.set('n', '<leader><space>', ':b ', { desc = '[ ] Find existing buffers' })
 

@@ -16,7 +16,7 @@ A minimalist, high-performance Neovim configuration built from the ground up on 
 - **Git Integration:** `gitsigns` shows additions, changes, and deletions in the gutter.
 
 ### 🔍 Navigation & Search
-- **Fuzzy finding:** Native command-line autocompletion (`wildtrigger()`) with fuzzy matching drives `:find` (via `fd`), `:b` and `:Recent`. `:grep` uses ripgrep and opens quickfix.
+- **Fuzzy finding:** Native command-line autocompletion (`wildtrigger()`) with fuzzy matching drives `:find` (via `fd`), `:b` and `:Recent`. `:Grep` (`<leader>/`) searches the project with ripgrep into quickfix.
 - **Oil:** Edit the filesystem like a buffer.
 - **File slots:** Global marks `A`-`D` work like harpoon.
 
@@ -79,4 +79,4 @@ The `<leader>` key is set to **Space**.
 ## ⚙️ Requirements
 - **Neovim 0.12+** (Required for `vim.pack`, `'autocomplete'` and `wildtrigger()`)
 - **Language servers:** `lua-language-server` and `gopls` on `PATH` or in Mason's bin directory.
-- **Ripgrep** and **fd:** For `:grep` (`<leader>/`) and `:find` (`<leader>sf`).
+- **Ripgrep** and **fd:** For `:Grep` (`<leader>/`) and `:find` (`<leader>sf`).
