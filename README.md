@@ -1,29 +1,29 @@
 # Custom Neovim Configuration (Kickstart-based)
 
-A minimalist, high-performance Neovim configuration built from the ground up using **Lazy.nvim**. This setup focuses on "only what I use," moving away from the bloat of pre-configured distributions like LazyVim while maintaining powerful IDE-like features.
+A minimalist, high-performance Neovim configuration built from the ground up on Neovim's built-in plugin manager, **vim.pack**. This setup focuses on "only what I use," moving away from the bloat of pre-configured distributions like LazyVim while maintaining powerful IDE-like features.
 
 ## 🚀 Core Philosophies
 - **Visibility:** One primary `init.lua` makes the configuration easy to trace and modify.
-- **Performance:** Minimal plugin count (under 15) ensuring near-instant startup.
-- **Native-First:** Prioritizes Neovim 0.10+ native features (like built-in commenting and folding) over external plugins where possible.
+- **Performance:** Minimal plugin count (7) ensuring near-instant startup.
+- **Native-First:** Prioritizes Neovim 0.12 native features (LSP, completion, fuzzy cmdline, statusline) over external plugins where possible.
 
 ## 🛠️ Key Components
 
 ### 🎨 Aesthetics & UI
 - **Theme:** `tokyonight-night` for a vibrant, low-strain dark mode.
-- **Statusline:** `lualine.nvim` provides mode, file info, and LSP status.
-- **Indent Guides:** `indent-blankline` helps visualize code scope levels.
+- **Statusline:** Neovim's default statusline shows diagnostics and LSP progress.
+- **Indent Guides:** `listchars` (`leadmultispace`) draws a guide every `shiftwidth` columns.
 - **Git Integration:** `gitsigns` shows additions, changes, and deletions in the gutter.
 
 ### 🔍 Navigation & Search
-- **Telescope:** The centerpiece for fuzzy finding. Custom-tuned with a dropdown theme for buffer searches.
-- **Nvim-Tree:** A sidebar file explorer for visual project management.
-- **Smart Folds:** Treesitter-aware folding (`za`) that understands code logic/scope rather than just indentation.
+- **Fuzzy finding:** Native command-line autocompletion (`wildtrigger()`) with fuzzy matching drives `:find` (via `fd`), `:b` and `:Recent`. `:grep` uses ripgrep and opens quickfix.
+- **Oil:** Edit the filesystem like a buffer.
+- **File slots:** Global marks `A`-`D` work like harpoon.
 
 ### 💻 Development Tools
-- **LSP & Mason:** Modern `LspAttach` logic for managing and connecting language servers (`lua_ls`, `gopls`, etc.).
+- **LSP:** `vim.lsp.config` / `vim.lsp.enable` (`lua_ls`, `gopls`), using servers from Mason's bin directory.
 - **Treesitter:** Uses Neovim's native API for fast, reliable syntax highlighting and smart indentation.
-- **Autocompletion:** `nvim-cmp` with specific logic for Arrow Key navigation and Snippet jumping via Tab.
+- **Autocompletion:** Native `'autocomplete'` + `vim.lsp.completion`, with built-in snippet jumping via Tab.
 
 ---
 
@@ -31,14 +31,13 @@ A minimalist, high-performance Neovim configuration built from the ground up usi
 
 The `<leader>` key is set to **Space**.
 
-### Telescope (Search)
+### Search
 | Keybind | Action | Description |
 |:--- |:--- |:--- |
 | `<leader>sf` | Search Files | Fuzzy find files in your project |
-| `<leader>sb` | Search Buffer | Fuzzy find **inside** the current file (Dropdown) |
+| `<leader>sb` | Search Buffer | Fuzzy find **inside** the current file (location list) |
 | `<leader>/` | Global Grep | Search for text strings across the whole project |
 | `<leader>sr` | Recent Files | Re-open recently edited files |
-| `<leader>ss` | Symbols | Jump to functions/variables in current file |
 | `<leader><space>`| Buffers | Switch between currently open files |
 
 ### LSP (Intellisense)
@@ -48,17 +47,22 @@ The `<leader>` key is set to **Space**.
 | `K` | Hover | Show documentation/type info for word under cursor |
 | `<leader>rn`| Rename | Project-wide variable renaming |
 | `<leader>ca`| Code Action | Apply LSP suggested fixes |
+| `grr` / `gri` / `grt` | References / Implementation / Type definition | Built-in defaults |
+| `grc` | Incoming Calls | Who calls this function? |
+| `<leader>ss` / `<leader>sw` | Symbols | Document / workspace symbols |
 
 ### Autocompletion (Menu)
 - **`<Down>` / `<Up>`**: Navigate the suggestion list.
-- **`<Enter>`**: Confirm selection.
+- **`<Enter>`**: Confirm selection (or the first item).
 - **`<Tab>`**: Jump to the next placeholder in a code snippet.
 - **`<S-Tab>`**: Jump to the previous placeholder in a code snippet.
 
 ### General & Windowing
 | Keybind | Action |
 |:--- |:--- |
-| `<leader>e` | Toggle File Explorer (Sidebar) |
+| `<leader>e` | Open Oil file explorer |
+| `<leader>a` / `<leader>q` | Add file to a slot / list slots |
+| `<leader>1`-`4` | Jump to file slot |
 | `<Esc>` | Clear search highlights |
 | `Ctrl + h/j/k/l` | Navigate between split windows |
 | `gcc` | Toggle line comment (Native Neovim) |
@@ -69,10 +73,10 @@ The `<leader>` key is set to **Space**.
 
 1. Backup your current config: `mv ~/.config/nvim ~/.config/nvim_backup`
 2. Clone this configuration into `~/.config/nvim/init.lua`.
-3. Open Neovim; `Lazy.nvim` will automatically download and install all plugins.
-4. Run `:Mason` to install any additional LSP servers or formatters you require.
+3. Open Neovim; `vim.pack` installs all plugins at the revisions in `nvim-pack-lock.json`.
+4. Update plugins with `:lua vim.pack.update()`.
 
 ## ⚙️ Requirements
-- **Neovim 0.10+** (Required for native commenting and modern LSP logic)
-- **Nerd Font:** For devicons in the statusline and file tree.
-- **Ripgrep:** For Telescope global grep functionality (`<leader>/`).
+- **Neovim 0.12+** (Required for `vim.pack`, `'autocomplete'` and `wildtrigger()`)
+- **Language servers:** `lua-language-server` and `gopls` on `PATH` or in Mason's bin directory.
+- **Ripgrep** and **fd:** For `:grep` (`<leader>/`) and `:find` (`<leader>sf`).
