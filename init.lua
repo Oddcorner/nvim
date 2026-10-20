@@ -320,4 +320,17 @@ vim.keymap.set('n', '<leader>/', ':Grep ', { desc = 'Search [/] (Global)' })
 vim.keymap.set('n', '<leader>sr', ':Recent ', { desc = '[S]earch [R]ecent Files' })
 vim.keymap.set('n', '<leader><space>', ':b ', { desc = '[ ] Find existing buffers' })
 
+-- <CR> in a quickfix/location list jumps to the entry and closes the list
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'qf',
+  callback = function(args)
+    vim.keymap.set('n', '<CR>', function()
+      local is_loclist = vim.fn.getwininfo(vim.api.nvim_get_current_win())[1].loclist == 1
+      local idx = vim.fn.line '.'
+      vim.cmd((is_loclist and 'll ' or 'cc ') .. idx)
+      vim.cmd(is_loclist and 'lclose' or 'cclose')
+    end, { buffer = args.buf, desc = 'Open entry and close list' })
+  end,
+})
+
 -- vim: ts=2 sts=2 sw=2 et
