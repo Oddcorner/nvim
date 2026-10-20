@@ -103,14 +103,15 @@ require('lazy').setup {
       -- 7. Workspace Symbols (Find any Struct/Function in the whole Go project)
       vim.keymap.set('n', '<leader>sw', builtin.lsp_dynamic_workspace_symbols, { desc = '[S]earch [W]orkspace Symbols' })
 
+      -- These override the built-in gr* LSP defaults (grr, gri) with Telescope pickers
       -- 8. References (Where is this used?)
-      vim.keymap.set('n', 'gr', builtin.lsp_references, { desc = '[G]oto [R]eferences' })
+      vim.keymap.set('n', 'grr', builtin.lsp_references, { desc = '[G]oto [R]eferences' })
 
       -- 9. Incoming Calls (Who calls this function?)
-      vim.keymap.set('n', 'gR', builtin.lsp_incoming_calls, { desc = '[G]oto Incoming [C]alls' })
+      vim.keymap.set('n', 'grc', builtin.lsp_incoming_calls, { desc = '[G]oto Incoming [C]alls' })
 
       -- 10. Implementations (Which struct implements this interface?)
-      vim.keymap.set('n', 'gi', builtin.lsp_implementations, { desc = '[G]oto [I]mplementation' })
+      vim.keymap.set('n', 'gri', builtin.lsp_implementations, { desc = '[G]oto [I]mplementation' })
     end,
   },
 
@@ -148,120 +149,9 @@ require('lazy').setup {
     end,
   },
 
-  -- LSP and Mason
-  -- {
-  --   'neovim/nvim-lspconfig',
-  --   dependencies = {
-  --     'mason-org/mason.nvim',
-  --     'mason-org/mason-lspconfig.nvim',
-  --     -- Optional: Useful status updates for LSP
-  --     { 'j-hui/fidget.nvim', opts = {} },
-  --   },
-  --   config = function()
-  --     require('mason').setup()
-  --     local mason_lspconfig = require 'mason-lspconfig'
-  --
-  --     -- 1. Setup your on_attach keybinds
-  --     vim.api.nvim_create_autocmd('LspAttach', {
-  --       group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
-  --       callback = function(event)
-  --         local map = function(keys, func, desc) vim.keymap.set('n', keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc }) end
-  --
-  --         map('gd', vim.lsp.buf.definition, '[G]oto [D]efinition')
-  --         map('K', vim.lsp.buf.hover, 'Hover Documentation')
-  --         map('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
-  --         map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
-  --
-  --         -- Helpful: highlight references of the word under cursor
-  --         local client = vim.lsp.get_client_by_id(event.data.client_id)
-  --         if client and client.server_capabilities.documentHighlightProvider then
-  --           vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
-  --             buffer = event.buf,
-  --             callback = vim.lsp.buf.document_highlight,
-  --           })
-  --           vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
-  --             buffer = event.buf,
-  --             callback = vim.lsp.buf.clear_references,
-  --           })
-  --         end
-  --       end,
-  --     })
-  --
-  --     -- 2. Define your servers and their settings
-  --     local servers = {
-  --       lua_ls = {
-  --         settings = {
-  --           Lua = {
-  --             completion = { callSnippet = 'Replace' },
-  --             diagnostics = { globals = { 'vim' } },
-  --           },
-  --         },
-  --       },
-  --       -- Add pyright = {}, tsserver = {}, etc. here
-  --       gopls = {
-  --         settings = {
-  --           gopls = {
-  --             codelenses = {
-  --               generate = true,
-  --               gc_details = true, -- Shows "optimization" details like escape analysis
-  --               test = true,
-  --               tidy = true,
-  --             },
-  --           },
-  --         },
-  --       },
-  --
-  --     }
-  --
-  --     -- 3. Use mason-lspconfig to bridge the gap
-  --     mason_lspconfig.setup {
-  --       ensure_installed = vim.tbl_keys(servers),
-  --       handlers = {
-  --         function(server_name)
-  --           local server = servers[server_name] or {}
-  --           -- This is the modern replacement for require('lspconfig')[name].setup
-  --           require('lspconfig')[server_name].setup(server)
-  --         end,
-  --       },
-  --     }
-  --   end,
-  -- },
-
-  -- Autocompletion
-  {
-    'hrsh7th/nvim-cmp',
-    dependencies = { 'hrsh7th/cmp-nvim-lsp', 'L3MON4D3/LuaSnip', 'saadparwaiz1/cmp_luasnip' },
-    config = function()
-      local cmp = require 'cmp'
-      local luasnip = require 'luasnip'
-      cmp.setup {
-        snippet = { expand = function(args) luasnip.lsp_expand(args.body) end },
-        mapping = cmp.mapping.preset.insert {
-          ['<Down>'] = cmp.mapping.select_next_item(),
-          ['<Up>'] = cmp.mapping.select_prev_item(),
-          ['<CR>'] = cmp.mapping.confirm { select = true },
-          ['<Tab>'] = cmp.mapping(function(fallback)
-            if luasnip.expand_or_locally_jumpable() then
-              luasnip.expand_or_jump()
-            else
-              fallback()
-            end
-          end, { 'i', 's' }),
-          ['<S-Tab>'] = cmp.mapping(function(fallback)
-            if luasnip.locally_jumpable(-1) then
-              luasnip.jump(-1)
-            else
-              fallback()
-            end
-          end, { 'i', 's' }),
-        },
-        sources = { { name = 'nvim_lsp' }, { name = 'luasnip' } },
-      }
-    end,
-  },
-
   -- Auto Brackets
-  { 'windwp/nvim-autopairs', event = 'InsertEnter', config = true },
+  -- map_cr is handled by the completion <CR> mapping below
+  { 'windwp/nvim-autopairs', event = 'InsertEnter', opts = { map_cr = false } },
 
 
   -- GitSigns for git changes
@@ -332,5 +222,87 @@ require('lazy').setup {
     lazy = false,
   },
 }
+
+-- [[ LSP ]]
+-- Servers are installed by Mason previously; reuse its bin dir
+vim.env.PATH = vim.fn.stdpath 'data' .. '/mason/bin:' .. vim.env.PATH
+
+vim.lsp.config('lua_ls', {
+  cmd = { 'lua-language-server' },
+  filetypes = { 'lua' },
+  root_markers = { '.luarc.json', '.luarc.jsonc', '.stylua.toml', '.git' },
+  settings = {
+    Lua = {
+      completion = { callSnippet = 'Replace' },
+      diagnostics = { globals = { 'vim' } },
+    },
+  },
+})
+
+vim.lsp.config('gopls', {
+  cmd = { 'gopls' },
+  filetypes = { 'go', 'gomod', 'gowork', 'gotmpl' },
+  root_markers = { 'go.work', 'go.mod', '.git' },
+  settings = {
+    gopls = {
+      codelenses = {
+        generate = true,
+        gc_details = true, -- Shows "optimization" details like escape analysis
+        test = true,
+        tidy = true,
+      },
+    },
+  },
+})
+
+vim.lsp.enable { 'lua_ls', 'gopls' }
+
+-- Built-in defaults: K hover, grn rename, gra code action, grr references,
+-- gri implementation, grt type definition, gO document symbols, <C-s> signature help
+vim.api.nvim_create_autocmd('LspAttach', {
+  group = vim.api.nvim_create_augroup('user-lsp-attach', { clear = true }),
+  callback = function(event)
+    local map = function(keys, func, desc) vim.keymap.set('n', keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc }) end
+
+    map('gd', vim.lsp.buf.definition, '[G]oto [D]efinition')
+    map('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
+    map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
+
+    local client = vim.lsp.get_client_by_id(event.data.client_id)
+    if not client then return end
+
+    -- Lets <C-y> apply snippets, auto-imports, etc. for items from omnifunc
+    if client:supports_method 'textDocument/completion' then vim.lsp.completion.enable(true, client.id, event.buf) end
+
+    -- Highlight references of the word under cursor
+    if client:supports_method 'textDocument/documentHighlight' then
+      vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
+        buffer = event.buf,
+        callback = vim.lsp.buf.document_highlight,
+      })
+      vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
+        buffer = event.buf,
+        callback = vim.lsp.buf.clear_references,
+      })
+    end
+  end,
+})
+
+-- [[ Completion ]]
+-- Native autocompletion: LSP (omnifunc) first, then buffer words
+vim.o.autocomplete = true
+vim.o.complete = 'o,.,w,b,u'
+vim.opt.completeopt = { 'menuone', 'noselect', 'popup', 'fuzzy' }
+
+-- <Up>/<Down> navigate the menu natively; <Tab>/<S-Tab> jump snippet placeholders by default
+-- <CR> accepts the selected (or first) item, otherwise falls through to autopairs
+vim.keymap.set('i', '<CR>', function()
+  local keys = function(s) return vim.api.nvim_replace_termcodes(s, true, false, true) end
+  if vim.fn.pumvisible() == 1 then
+    return vim.fn.complete_info({ 'selected' }).selected == -1 and keys '<C-n><C-y>' or keys '<C-y>'
+  end
+  local ok, npairs = pcall(require, 'nvim-autopairs')
+  return ok and npairs.autopairs_cr() or keys '<CR>'
+end, { expr = true, replace_keycodes = false, desc = 'Accept completion' })
 
 -- vim: ts=2 sts=2 sw=2 et
