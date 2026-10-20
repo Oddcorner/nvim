@@ -21,7 +21,7 @@ A minimalist, high-performance Neovim configuration built from the ground up on 
 - **File slots:** Global marks `A`-`D` work like harpoon.
 
 ### 💻 Development Tools
-- **LSP:** `vim.lsp.config` / `vim.lsp.enable` (`lua_ls`, `gopls`), using servers from Mason's bin directory.
+- **LSP:** `vim.lsp.config` / `vim.lsp.enable` (`lua_ls`, `gopls`).
 - **Treesitter:** Uses Neovim's native API for fast, reliable syntax highlighting and smart indentation.
 - **Autocompletion:** Native `'autocomplete'` + `vim.lsp.completion`, with built-in snippet jumping via Tab.
 
@@ -78,5 +78,5 @@ The `<leader>` key is set to **Space**.
 
 ## ⚙️ Requirements
 - **Neovim 0.12+** (Required for `vim.pack`, `'autocomplete'` and `wildtrigger()`)
-- **Language servers:** `lua-language-server` and `gopls` on `PATH` or in Mason's bin directory.
+- **Language servers:** `lua-language-server` and `gopls` on `PATH` (e.g. `go install golang.org/x/tools/gopls@latest`, `sudo dnf install lua-language-server`).
 - **Ripgrep** and **fd:** For `:Grep` (`<leader>/`) and `:find` (`<leader>sf`).

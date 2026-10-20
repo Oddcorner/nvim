@@ -162,9 +162,6 @@ require('mini.icons').setup()
 require('oil').setup()
 
 -- [[ LSP ]]
--- Servers are installed by Mason previously; reuse its bin dir
-vim.env.PATH = vim.fn.stdpath 'data' .. '/mason/bin:' .. vim.env.PATH
-
 vim.lsp.config('lua_ls', {
   cmd = { 'lua-language-server' },
   filetypes = { 'lua' },
