@@ -27,9 +27,9 @@ vim.opt.shiftwidth = 4
 vim.opt.expandtab = true
 
 -- Context Aware Folds
-vim.opt.foldmethod = 'expr'
-vim.opt.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
-vim.opt.foldlevel = 99 -- Start with all folds open
+-- vim.opt.foldmethod = 'expr'
+-- vim.opt.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+-- vim.opt.foldlevel = 99 -- Start with all folds open
 
 -- Exit terminal mode with double escape
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
@@ -38,15 +38,7 @@ vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' }
 vim.opt.hlsearch = true
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
--- Custom netrw keymap
-local function toggle_netrw()
-  if vim.bo.filetype == 'netrw' then
-    vim.cmd('Rexplore')
-  else
-    vim.cmd('Explore')
-  end
-end
-vim.keymap.set('n', '<leader>e', toggle_netrw, { desc = '[E]xplore (Toggle Netrw)' })
+vim.keymap.set('n', '<leader>e', ':Oil<CR>', { desc = '[E]xplore (Oil)' })
 
 -- buffer delete
 vim.keymap.set('n', '<leader>bd', '<CMD>bp|bd #<CR>', { desc = '[X] Close Buffer' })
@@ -157,83 +149,83 @@ require('lazy').setup {
   },
 
   -- LSP and Mason
-  {
-    'neovim/nvim-lspconfig',
-    dependencies = {
-      'mason-org/mason.nvim',
-      'mason-org/mason-lspconfig.nvim',
-      -- Optional: Useful status updates for LSP
-      { 'j-hui/fidget.nvim', opts = {} },
-    },
-    config = function()
-      require('mason').setup()
-      local mason_lspconfig = require 'mason-lspconfig'
-
-      -- 1. Setup your on_attach keybinds
-      vim.api.nvim_create_autocmd('LspAttach', {
-        group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
-        callback = function(event)
-          local map = function(keys, func, desc) vim.keymap.set('n', keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc }) end
-
-          map('gd', vim.lsp.buf.definition, '[G]oto [D]efinition')
-          map('K', vim.lsp.buf.hover, 'Hover Documentation')
-          map('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
-          map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
-
-          -- Helpful: highlight references of the word under cursor
-          local client = vim.lsp.get_client_by_id(event.data.client_id)
-          if client and client.server_capabilities.documentHighlightProvider then
-            vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
-              buffer = event.buf,
-              callback = vim.lsp.buf.document_highlight,
-            })
-            vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
-              buffer = event.buf,
-              callback = vim.lsp.buf.clear_references,
-            })
-          end
-        end,
-      })
-
-      -- 2. Define your servers and their settings
-      local servers = {
-        lua_ls = {
-          settings = {
-            Lua = {
-              completion = { callSnippet = 'Replace' },
-              diagnostics = { globals = { 'vim' } },
-            },
-          },
-        },
-        -- Add pyright = {}, tsserver = {}, etc. here
-        gopls = {
-          settings = {
-            gopls = {
-              codelenses = {
-                generate = true,
-                gc_details = true, -- Shows "optimization" details like escape analysis
-                test = true,
-                tidy = true,
-              },
-            },
-          },
-        },
-
-      }
-
-      -- 3. Use mason-lspconfig to bridge the gap
-      mason_lspconfig.setup {
-        ensure_installed = vim.tbl_keys(servers),
-        handlers = {
-          function(server_name)
-            local server = servers[server_name] or {}
-            -- This is the modern replacement for require('lspconfig')[name].setup
-            require('lspconfig')[server_name].setup(server)
-          end,
-        },
-      }
-    end,
-  },
+  -- {
+  --   'neovim/nvim-lspconfig',
+  --   dependencies = {
+  --     'mason-org/mason.nvim',
+  --     'mason-org/mason-lspconfig.nvim',
+  --     -- Optional: Useful status updates for LSP
+  --     { 'j-hui/fidget.nvim', opts = {} },
+  --   },
+  --   config = function()
+  --     require('mason').setup()
+  --     local mason_lspconfig = require 'mason-lspconfig'
+  --
+  --     -- 1. Setup your on_attach keybinds
+  --     vim.api.nvim_create_autocmd('LspAttach', {
+  --       group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
+  --       callback = function(event)
+  --         local map = function(keys, func, desc) vim.keymap.set('n', keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc }) end
+  --
+  --         map('gd', vim.lsp.buf.definition, '[G]oto [D]efinition')
+  --         map('K', vim.lsp.buf.hover, 'Hover Documentation')
+  --         map('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
+  --         map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
+  --
+  --         -- Helpful: highlight references of the word under cursor
+  --         local client = vim.lsp.get_client_by_id(event.data.client_id)
+  --         if client and client.server_capabilities.documentHighlightProvider then
+  --           vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
+  --             buffer = event.buf,
+  --             callback = vim.lsp.buf.document_highlight,
+  --           })
+  --           vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
+  --             buffer = event.buf,
+  --             callback = vim.lsp.buf.clear_references,
+  --           })
+  --         end
+  --       end,
+  --     })
+  --
+  --     -- 2. Define your servers and their settings
+  --     local servers = {
+  --       lua_ls = {
+  --         settings = {
+  --           Lua = {
+  --             completion = { callSnippet = 'Replace' },
+  --             diagnostics = { globals = { 'vim' } },
+  --           },
+  --         },
+  --       },
+  --       -- Add pyright = {}, tsserver = {}, etc. here
+  --       gopls = {
+  --         settings = {
+  --           gopls = {
+  --             codelenses = {
+  --               generate = true,
+  --               gc_details = true, -- Shows "optimization" details like escape analysis
+  --               test = true,
+  --               tidy = true,
+  --             },
+  --           },
+  --         },
+  --       },
+  --
+  --     }
+  --
+  --     -- 3. Use mason-lspconfig to bridge the gap
+  --     mason_lspconfig.setup {
+  --       ensure_installed = vim.tbl_keys(servers),
+  --       handlers = {
+  --         function(server_name)
+  --           local server = servers[server_name] or {}
+  --           -- This is the modern replacement for require('lspconfig')[name].setup
+  --           require('lspconfig')[server_name].setup(server)
+  --         end,
+  --       },
+  --     }
+  --   end,
+  -- },
 
   -- Autocompletion
   {
@@ -271,15 +263,6 @@ require('lazy').setup {
   -- Auto Brackets
   { 'windwp/nvim-autopairs', event = 'InsertEnter', config = true },
 
-  -- File Explorer Sidebar
-  -- {
-  --   'nvim-tree/nvim-tree.lua',
-  --   dependencies = { 'nvim-tree/nvim-web-devicons' },
-  --   config = function()
-  --     require('nvim-tree').setup()
-  --     vim.keymap.set('n', '<leader>e', ':NvimTreeToggle<CR>', { desc = 'Toggle File [E]xplorer' })
-  --   end,
-  -- },
 
   -- GitSigns for git changes
   {
@@ -335,6 +318,18 @@ require('lazy').setup {
       vim.keymap.set("n", "<leader>3", function() harpoon:list():select(3) end, { desc = "Harpoon to 3" })
       vim.keymap.set("n", "<leader>4", function() harpoon:list():select(4) end, { desc = "Harpoon to 4" })
     end,
+  },
+
+  -- oil
+  {
+    'stevearc/oil.nvim',
+    ---@module 'oil'
+    ---@type oil.SetupOpts
+    opts = {},
+    -- Optional dependencies
+    dependencies = { { "nvim-mini/mini.icons", opts = {} } },
+    -- Lazy loading is not recommended because it is very tricky to make it work correctly in all situations.
+    lazy = false,
   },
 }
 
