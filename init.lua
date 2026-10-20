@@ -5,7 +5,6 @@ vim.g.maplocalleader = ' '
 vim.opt.number = true
 vim.opt.relativenumber = true
 vim.opt.mouse = 'a'
-vim.opt.showmode = false
 vim.opt.clipboard = 'unnamedplus'
 vim.opt.breakindent = true
 vim.opt.undofile = true
@@ -48,6 +47,47 @@ vim.keymap.set('n', '<C-h>', '<C-w>h', { desc = 'Move focus to the left window' 
 vim.keymap.set('n', '<C-l>', '<C-w>l', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w>j', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w>k', { desc = 'Move focus to the upper window' })
+
+-- Indent guides (replaces indent-blankline): a guide every 'shiftwidth' columns
+vim.opt.list = true
+vim.opt.listchars = { tab = '│ ', trail = '·', nbsp = '␣' }
+local function set_indent_guides()
+  vim.opt_local.listchars:append { leadmultispace = '│' .. string.rep(' ', vim.fn.shiftwidth() - 1) }
+end
+vim.api.nvim_create_autocmd('BufWinEnter', { callback = set_indent_guides })
+vim.api.nvim_create_autocmd('OptionSet', { pattern = 'shiftwidth', callback = set_indent_guides })
+
+-- File marks as a harpoon replacement: slots 1-4 map to global marks A-D (persisted in shada)
+local slots = { 'A', 'B', 'C', 'D' }
+vim.keymap.set('n', '<leader>a', function()
+  local file = vim.api.nvim_buf_get_name(0)
+  for i, mark in ipairs(slots) do
+    local m = vim.api.nvim_get_mark(mark, {})
+    if m[4] ~= '' and vim.fn.fnamemodify(m[4], ':p') == file then
+      return vim.notify('Already in slot ' .. i)
+    end
+  end
+  for i, mark in ipairs(slots) do
+    if vim.api.nvim_get_mark(mark, {})[4] == '' then
+      vim.cmd('normal! m' .. mark)
+      return vim.notify('Added to slot ' .. i)
+    end
+  end
+  vim.notify('All slots full, clear one with :delmarks A-D', vim.log.levels.WARN)
+end, { desc = 'Mark [A]dd file to slot' })
+vim.keymap.set('n', '<leader>q', '<cmd>marks ABCD<CR>', { desc = 'List file mark slots' })
+for i, mark in ipairs(slots) do
+  vim.keymap.set('n', '<leader>' .. i, function()
+    local m = vim.api.nvim_get_mark(mark, {})
+    if m[4] == '' then return vim.notify('Slot ' .. i .. ' is empty') end
+    -- Prefer the buffer's last cursor position over where the mark was set
+    if m[3] ~= 0 and vim.api.nvim_buf_is_loaded(m[3]) then
+      vim.cmd.buffer(m[3])
+    else
+      vim.cmd('normal! `' .. mark)
+    end
+  end, { desc = 'Go to slot ' .. i })
+end
 
 -- [[ Install lazy.nvim ]]
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
@@ -164,50 +204,6 @@ require('lazy').setup {
         delete = { text = '_' },
       },
     },
-  },
-
-  -- Indentation lines
-  {
-    'lukas-reineke/indent-blankline.nvim',
-    main = 'ibl',
-    opts = {},
-  },
-
-  -- Status line
-  {
-    'nvim-lualine/lualine.nvim',
-    dependencies = { 'nvim-tree/nvim-web-devicons' },
-    opts = {
-      options = {
-        theme = 'tokyonight',
-        component_separators = '|',
-        section_separators = '',
-      },
-    },
-  },
-
-
-  -- Harpoon
-  {
-    "ThePrimeagen/harpoon",
-    branch = "harpoon2",
-    dependencies = { "nvim-lua/plenary.nvim" },
-    config = function()
-      local harpoon = require("harpoon")
-      harpoon:setup()
-
-      -- Add current file to harpoon
-      vim.keymap.set("n", "<leader>a", function() harpoon:list():add() end, { desc = "Harpoon [A]dd" })
-      
-      -- Toggle the visual menu
-      vim.keymap.set("n", "<leader>q", function() harpoon.ui:toggle_quick_menu(harpoon:list()) end, { desc = "Harpoon Menu" })
-
-      -- Jump to specific files
-      vim.keymap.set("n", "<leader>1", function() harpoon:list():select(1) end, { desc = "Harpoon to 1" })
-      vim.keymap.set("n", "<leader>2", function() harpoon:list():select(2) end, { desc = "Harpoon to 2" })
-      vim.keymap.set("n", "<leader>3", function() harpoon:list():select(3) end, { desc = "Harpoon to 3" })
-      vim.keymap.set("n", "<leader>4", function() harpoon:list():select(4) end, { desc = "Harpoon to 4" })
-    end,
   },
 
   -- oil
