@@ -106,8 +106,6 @@ local gh = function(repo) return 'https://github.com/' .. repo end
 vim.pack.add {
   gh 'folke/tokyonight.nvim',
   gh 'folke/which-key.nvim',
-  gh 'nvim-lua/plenary.nvim',
-  gh 'nvim-telescope/telescope.nvim',
   { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' },
   gh 'windwp/nvim-autopairs',
   gh 'lewis6991/gitsigns.nvim',
@@ -120,50 +118,6 @@ vim.cmd.colorscheme 'tokyonight-night'
 
 -- Which-Key
 require('which-key').setup()
-
--- Telescope (Fuzzy Finder)
-do
-  local builtin = require('telescope.builtin')
-  local themes = require('telescope.themes')
-
-  -- --- SEARCH MAPPINGS ---
-  -- 1. Find Files
-  vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
-
-  -- 2. Search INSIDE current buffer (Dropdown)
-  vim.keymap.set('n', '<leader>sb', function()
-    builtin.current_buffer_fuzzy_find(themes.get_dropdown {
-      winblend = 10,
-      previewer = false,
-    })
-  end, { desc = '[S]earch [B]uffer (Fuzzy)' })
-
-  -- 3. Global Grep (Massive repo search)
-  vim.keymap.set('n', '<leader>/', builtin.live_grep, { desc = 'Search [/] (Global)' })
-
-  -- 4. Recent Files
-  vim.keymap.set('n', '<leader>sr', builtin.oldfiles, { desc = '[S]earch [R]ecent Files' })
-
-  -- 5. Open Buffers
-  vim.keymap.set('n', '<leader><space>', builtin.buffers, { desc = '[ ] Find existing buffers' })
-
-  -- --- CODE ANALYSIS MAPPINGS (LSP Integration) ---
-  -- 6. Document Symbols (Functions/Variables in current file)
-  vim.keymap.set('n', '<leader>ss', builtin.lsp_document_symbols, { desc = '[S]earch [S]ymbols' })
-
-  -- 7. Workspace Symbols (Find any Struct/Function in the whole Go project)
-  vim.keymap.set('n', '<leader>sw', builtin.lsp_dynamic_workspace_symbols, { desc = '[S]earch [W]orkspace Symbols' })
-
-  -- These override the built-in gr* LSP defaults (grr, gri) with Telescope pickers
-  -- 8. References (Where is this used?)
-  vim.keymap.set('n', 'grr', builtin.lsp_references, { desc = '[G]oto [R]eferences' })
-
-  -- 9. Incoming Calls (Who calls this function?)
-  vim.keymap.set('n', 'grc', builtin.lsp_incoming_calls, { desc = '[G]oto Incoming [C]alls' })
-
-  -- 10. Implementations (Which struct implements this interface?)
-  vim.keymap.set('n', 'gri', builtin.lsp_implementations, { desc = '[G]oto [I]mplementation' })
-end
 
 -- Treesitter (Highlighting)
 do
@@ -256,6 +210,9 @@ vim.api.nvim_create_autocmd('LspAttach', {
     map('gd', vim.lsp.buf.definition, '[G]oto [D]efinition')
     map('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
     map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
+    map('<leader>ss', vim.lsp.buf.document_symbol, '[S]earch [S]ymbols')
+    map('<leader>sw', vim.lsp.buf.workspace_symbol, '[S]earch [W]orkspace Symbols')
+    map('grc', vim.lsp.buf.incoming_calls, '[G]oto Incoming [C]alls')
 
     local client = vim.lsp.get_client_by_id(event.data.client_id)
     if not client then return end
@@ -293,5 +250,58 @@ vim.keymap.set('i', '<CR>', function()
   local ok, npairs = pcall(require, 'nvim-autopairs')
   return ok and npairs.autopairs_cr() or keys '<CR>'
 end, { expr = true, replace_keycodes = false, desc = 'Accept completion' })
+
+-- [[ Finder ]]
+-- Replaces Telescope with fuzzy command-line completion (:find, :b, :Recent) and :grep
+vim.o.wildmode = 'noselect:lastused,full'
+vim.o.wildoptions = 'pum,fuzzy'
+vim.api.nvim_create_autocmd('CmdlineChanged', { pattern = ':', callback = function() vim.fn.wildtrigger() end })
+-- Keep history navigation on <Up>/<Down> unless the popup is open
+vim.keymap.set('c', '<Up>', function() return vim.fn.wildmenumode() == 1 and '<C-e><Up>' or '<Up>' end, { expr = true })
+vim.keymap.set('c', '<Down>', function() return vim.fn.wildmenumode() == 1 and '<C-e><Down>' or '<Down>' end, { expr = true })
+
+-- :find uses fd (respects .gitignore), cached for the duration of one command line
+local files_cache
+function _G.FindFiles(arg, _)
+  if not files_cache then files_cache = vim.fn.systemlist { 'fd', '--type', 'f', '--hidden', '--exclude', '.git' } end
+  return arg == '' and files_cache or vim.fn.matchfuzzy(files_cache, arg)
+end
+vim.o.findfunc = 'v:lua.FindFiles'
+vim.api.nvim_create_autocmd('CmdlineEnter', { pattern = ':', callback = function() files_cache = nil end })
+
+-- :Recent picks from v:oldfiles; falls back to the best fuzzy match if the name isn't exact
+local function recent_files(arg)
+  local files = vim.tbl_filter(function(f) return vim.fn.filereadable(f) == 1 end, vim.v.oldfiles)
+  return arg == '' and files or vim.fn.matchfuzzy(files, arg)
+end
+vim.api.nvim_create_user_command('Recent', function(opts)
+  local file = vim.fn.filereadable(opts.args) == 1 and opts.args or recent_files(opts.args)[1]
+  if file then vim.cmd.edit(vim.fn.fnameescape(file)) end
+end, { nargs = 1, complete = recent_files, desc = 'Open a recent file' })
+
+-- :grep uses ripgrep and opens the quickfix list with the results
+vim.o.grepprg = 'rg --vimgrep --smart-case --hidden -g !.git'
+vim.api.nvim_create_autocmd('QuickFixCmdPost', { pattern = '[^l]*', command = 'cwindow' })
+vim.api.nvim_create_autocmd('QuickFixCmdPost', { pattern = 'l*', command = 'lwindow' })
+
+-- Fuzzy-match lines in the current buffer into the location list
+local function buffer_fuzzy_find()
+  vim.ui.input({ prompt = 'Fuzzy find in buffer: ' }, function(query)
+    if not query or query == '' then return end
+    local buf = vim.api.nvim_get_current_buf()
+    local items = {}
+    for lnum, line in ipairs(vim.api.nvim_buf_get_lines(buf, 0, -1, false)) do
+      items[#items + 1] = { bufnr = buf, lnum = lnum, text = line }
+    end
+    vim.fn.setloclist(0, {}, ' ', { title = 'Fuzzy: ' .. query, items = vim.fn.matchfuzzy(items, query, { key = 'text' }) })
+    vim.cmd.lwindow()
+  end)
+end
+
+vim.keymap.set('n', '<leader>sf', ':find ', { desc = '[S]earch [F]iles' })
+vim.keymap.set('n', '<leader>sb', buffer_fuzzy_find, { desc = '[S]earch [B]uffer (Fuzzy)' })
+vim.keymap.set('n', '<leader>/', ':silent grep! ', { desc = 'Search [/] (Global)' })
+vim.keymap.set('n', '<leader>sr', ':Recent ', { desc = '[S]earch [R]ecent Files' })
+vim.keymap.set('n', '<leader><space>', ':b ', { desc = '[ ] Find existing buffers' })
 
 -- vim: ts=2 sts=2 sw=2 et
